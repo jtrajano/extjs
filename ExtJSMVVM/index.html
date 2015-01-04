@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>TabletApp Standalone</title>
+    <link rel="stylesheet" type="text/css" href="extjs/ext-5.0.1/build/packages/ext-theme-neptune/build/resources/ext-theme-neptune-all-debug.css">
+    <script type="text/javascript" src="extjs/ext-5.0.1/build/ext-all-debug.js" ></script>
+    <script type="text/javascript">
+        Ext.define("TabletApp.model.Base",{
+            extend:"Ext.data.Model",
+            schema:{
+                namespace: "TabletApp.model"
+            },
+            fields:[
+                {name: "id" , type: "int"}
+            ]
+        });
+        Ext.define("App.fields.SessionLevelIds",{
+           extend: "Ext.data.field.Number",
+            alias: "data.field.sessionLevelid",
+            validators:[
+                {
+                    type: "inclusion",
+                    list : [1,2,3]
+                }
+            ]
+        });
+        Ext.define("App.fields.Title",{
+            extend: "Ext.data.field.String",
+            alias: "data.field.title",
+            validators:[
+                {
+                    type: "length",
+                    min: 3,
+                    minOnlyMessage:"Test"
+                }
+            ]
+        });
+        Ext.define("TabletApp.model.Session",{
+            extend: "TabletApp.model.Base",
+
+            requires: ["Ext.data.proxy.Rest"],
+            fields: [
+                { name: "title", type: "string",
+                    validators:[ { type: "length", min:3, minOnlyMessage: "Title must be at least 3 characters"}]
+                },
+                { name: "description", type: "string"},
+                { name: "sessionLevelId", type: "sessionLevelid"},
+                { name: "interestCount", type: "int"},
+                { name: "approved", type: "bool"},
+                {name: "tagId", type: "int"}
+            ],
+            proxy: {
+                type: "rest",
+                url: "session.json",
+                reader: {
+                    type: "json",
+                    rootProperty: "data"
+                }
+            }
+        });
+        var sessionHolder = Ext.create("Ext.data.Session");
+
+
+        var store1 = Ext.create("Ext.data.Store",{
+            requires:[
+                    "Ext.data.proxy.Rest",
+                    "Ext.grid.plugin.RowEditing"
+            ],
+            session: sessionHolder,
+            model: "Session",
+            autoLoad: true,
+            sorters: [{ property : "title"}]
+        });
+        var store2 = Ext.create("Ext.data.Store",{
+            requires:[
+                "Ext.data.proxy.Rest",
+                "Ext.grid.plugin.RowEditing"
+            ],
+            session: sessionHolder,
+            model:"Session",
+            autoLoad:true,
+            sorters: [{ property : "id"}]
+        })
+        Ext.define("TabletApp.model.SessionTag",{
+            extend: "TabletApp.model.Base",
+            fields:[
+                {name: "id", type: "int"},
+                {name: "name", type: "string"},
+                {name :"sessionId", reference: "Session"}
+            ]
+        })
+        Ext.application({
+            name: "MyApp",
+            launch: function(){
+
+                Ext.create("Ext.container.Viewport",{
+                    layout:"border",
+                    items:[
+                        {
+                            xtype: "toolbar",
+                            region:"north",
+                            items:[{
+                                xtype:"button",
+                                text: "Session Get Changes",
+                                handler:function(button){
+                                    var session = button.up().up().down("grid").getStore().getSession();
+                                    var changes = session.getChanges();
+                                    debugger;
+                                }
+                            },
+                                {
+                                    xtype:"button",
+                                    text:"Session Save Batch",
+                                    handler:function(button){
+                                        var session = button.up().up().getSession();
+                                        var batch = session.getSaveBatch();
+                                        var pause = batch.getPauseOnException();
+                                        batch.pauseOnException(false);
+                                        batch.on({
+                                            complete:function(){
+                                                debugger;
+                                            },
+                                            exception:function(){
+                                                debugger;
+                                            }
+                                        });
+                                        batch.start();
+                                    }
+
+                                }
+
+
+                            ]
+
+
+                        },
+                        {
+
+                        xtype: "grid",
+                        title: "sorted by title",
+                        region: "north",
+                        flex: 1,
+                        store:store1,
+                        plugins:{
+                            ptype: "rowediting",
+                            clicksToEdit: 1
+                        },
+                        columns:[
+                            {text: "Id",dataIndex:"id",width:50},
+                            {text: "Title",dataIndex:"title",flex:1,
+                                editor:{
+                                    xtype: "textfield",
+                                    allowBlank:false
+
+                                }
+                            }
+//                            {text: "Description",dataIndex:"description"},
+//                            {text: "Session Level Id",dataIndex:"sessionLevelId"},
+//                            {text: "Interest Count",dataIndex:"interestCount"},
+//                            {text: "Approved",dataIndex:"approved"},
+//                            {text: "Tag Id",dataIndex:"tagId"}
+                        ]
+                    },
+                        {
+                            xtype: "grid",
+                            title: "sorted by id",
+                            flex: 1,
+                            region: "center",
+                            store:store2,
+                            plugins:{
+                                ptype: "rowediting",
+                                clicksToEdit: 1
+                            },
+                            columns:[
+                                {text: "Id",dataIndex:"id",width:50},
+                                {text: "Title",dataIndex:"title",flex:1,
+                                    editor:{
+                                        xtype: "textfield",
+                                        allowBlank:false
+                                    }
+                                }
+//                            {text: "Description",dataIndex:"description"},
+//                            {text: "Session Level Id",dataIndex:"sessionLevelId"},
+//                            {text: "Interest Count",dataIndex:"interestCount"},
+//                            {text: "Approved",dataIndex:"approved"},
+//                            {text: "Tag Id",dataIndex:"tagId"}
+                            ]
+                        }
+
+                    ]
+                })
+
+
+            }
+        })
+
+    </script>
+
+
+</head>
+<body>
+
+</body>
+</html>
